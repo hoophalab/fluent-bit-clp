@@ -2,8 +2,12 @@ version: '3'
 
 tasks:
   build:
+    vars:
+      # Release builds set this to "-s -w" to drop the symbol table and DWARF info. Fluent Bit
+      # resolves the plugin's entry points through the dynamic symbol table, which is unaffected.
+      LDFLAGS: '{{.LDFLAGS | default ""}}'
     cmds:
-      - go build -buildmode=c-shared -o out_clp_s3.so
+      - go build -buildmode=c-shared -ldflags="{{.LDFLAGS}}" -o out_clp_s3.so
     sources:
       - ../../**/*.go
     generates:

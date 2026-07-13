@@ -41,7 +41,7 @@ jobs:
           # The checkout is owned by a different user than the container runs as, so disable VCS
           # stamping to avoid Git "dubious ownership" errors.
           GOFLAGS: "-buildvcs=false"
-        run: task build
+        run: task build LDFLAGS="-s -w"
 
       - name: "Create release archive"
         working-directory: "plugins/out_clp_s3"
