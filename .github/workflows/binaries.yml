@@ -47,6 +47,13 @@ jobs:
         working-directory: "plugins/out_clp_s3"
         run: tar -czvf out_clp_s3-linux-${{ matrix.arch }}.tar.gz out_clp_s3.so
 
+      - name: "Upload artifact"
+        if: "${{ inputs.release_tag == '' }}"
+        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"  # v7.0.1
+        with:
+          name: "out_clp_s3-linux-${{ matrix.arch }}"
+          path: "plugins/out_clp_s3/out_clp_s3-linux-${{ matrix.arch }}.tar.gz"
+
       - name: "Upload to release"
         if: "${{ inputs.release_tag != '' }}"
         working-directory: "plugins/out_clp_s3"
