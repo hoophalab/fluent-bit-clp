@@ -15,42 +15,33 @@ jobs:
         include:
           - arch: "amd64"
             runner: "ubuntu-24.04"
-            manylinux: "quay.io/pypa/manylinux_2_28_x86_64"
-            go_sha256: "dea9ca38a0b852a74e81c26134671af7c0fbe65d81b0dc1c5bfe22cf7d4c8858"
+            manylinux: "quay.io/pypa/manylinux_2_28_x86_64@sha256:35795c40ab9eed587a0f51a752c7defeabcc8a2ccd434d3497be201cdd34cb63"  # 2026.06.28-1
     runs-on: "${{ matrix.runner }}"
+    container:
+      image: "${{ matrix.manylinux }}"
     permissions:
       contents: "write"
     steps:
-      - uses: "actions/checkout@v6"
+      - uses: "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0"  # v7.0.0
         with:
           persist-credentials: false
+          submodules: "recursive"
 
-      - name: "Build binary"
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/src" \
-            -w /src \
-            ${{ matrix.manylinux }} \
-            bash -c '
-              set -e
+      - name: "Install Go"
+        uses: "actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16"  # v6.5.0
+        with:
+          go-version-file: "go.mod"
 
-              # Install Go (verify tarball checksum before extracting)
-              GO_TARBALL="go1.24.0.linux-${{ matrix.arch }}.tar.gz"
-              GO_SHA256="${{ matrix.go_sha256 }}"
-              curl -fsSL -o "$GO_TARBALL" "https://go.dev/dl/$GO_TARBALL"
-              echo "$GO_SHA256  $GO_TARBALL" | sha256sum -c -
-              tar -C /usr/local -xzf "$GO_TARBALL"
-              rm -f "$GO_TARBALL"
-              export PATH="/usr/local/go/bin:$PATH"
+      - name: "Install Task"
+        uses: "./tools/yscope-dev-utils/exports/github/actions/install-go-task"
 
-              # Install Task
-              curl -fsSL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin
-
-              # Build plugin
-              export GOFLAGS="-buildvcs=false"
-              cd plugins/out_clp_s3
-              task build
-            '
+      - name: "Build plugin"
+        working-directory: "plugins/out_clp_s3"
+        env:
+          # The checkout is owned by a different user than the container runs as, so disable VCS
+          # stamping to avoid Git "dubious ownership" errors.
+          GOFLAGS: "-buildvcs=false"
+        run: task build
 
       - name: "Create release archive"
         working-directory: "plugins/out_clp_s3"
