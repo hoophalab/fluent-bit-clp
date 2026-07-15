@@ -43,8 +43,6 @@ jobs:
         uses: "docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302"  # v6.2.0
         with:
           images: "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
-          # `latest=auto` tags `:latest` on non-pre-release semver releases (e.g. v1.2.3) while
-          # leaving pre-releases (e.g. v1.2.3-rc1) off `:latest`.
           flavor: "latest=auto"
           tags: |
             type=semver,pattern={{version}}
