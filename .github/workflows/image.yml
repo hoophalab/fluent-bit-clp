@@ -43,11 +43,13 @@ jobs:
         uses: "docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302"  # v6.2.0
         with:
           images: "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
+          # `latest=auto` tags `:latest` on non-pre-release semver releases (e.g. v1.2.3) while
+          # leaving pre-releases (e.g. v1.2.3-rc1) off `:latest`.
+          flavor: "latest=auto"
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref_name == github.event.repository.default_branch }}
 
       - name: "Build and push"
         uses: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a"  # v7.3.0

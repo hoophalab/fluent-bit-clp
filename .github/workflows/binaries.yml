@@ -20,7 +20,7 @@ jobs:
     container:
       image: "${{ matrix.manylinux }}"
     permissions:
-      contents: "write"
+      contents: "read"
     steps:
       - uses: "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0"  # v7.0.0
         with:
@@ -34,6 +34,8 @@ jobs:
 
       - name: "Install Task"
         uses: "./tools/yscope-dev-utils/exports/github/actions/install-go-task"
+        with:
+          version: "3.49.1"
 
       - name: "Build plugin"
         working-directory: "plugins/out_clp_s3"
@@ -46,15 +48,35 @@ jobs:
         run: tar -czvf out_clp_s3-linux-${{ matrix.arch }}.tar.gz out_clp_s3.so
 
       - name: "Upload artifact"
-        if: "${{ inputs.release_tag == '' }}"
         uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"  # v7.0.1
         with:
           name: "out_clp_s3-linux-${{ matrix.arch }}"
           path: "plugins/out_clp_s3/out_clp_s3-linux-${{ matrix.arch }}.tar.gz"
 
+  release:
+    if: "${{ inputs.release_tag != '' }}"
+    needs: ["build"]
+    runs-on: "ubuntu-24.04"
+    permissions:
+      contents: "write"
+    steps:
+      - name: "Download build artifacts"
+        uses: "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"  # v8.0.1
+        with:
+          pattern: "out_clp_s3-linux-*"
+          path: "release-assets"
+
       - name: "Upload to release"
-        if: "${{ inputs.release_tag != '' }}"
-        working-directory: "plugins/out_clp_s3"
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: gh release upload "${{ inputs.release_tag }}" out_clp_s3-linux-${{ matrix.arch }}.tar.gz --repo "${{ github.repository }}" --clobber
+          RELEASE_TAG: "${{ inputs.release_tag }}"
+          GH_REPO: "${{ github.repository }}"
+        shell: "bash"
+        run: |
+          shopt -s nullglob
+          assets=(release-assets/*/*.tar.gz)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "::error::No release assets found under release-assets/" >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --repo "$GH_REPO" --clobber
