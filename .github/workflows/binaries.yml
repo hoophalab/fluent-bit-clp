@@ -73,7 +73,7 @@ jobs:
           GH_REPO: "${{ github.repository }}"
         shell: "bash"
         run: |
-          shopt -s nullglob
+          shopt -s globstar
           assets=(release-assets/**/*.tar.gz)
           if [ ${#assets[@]} -eq 0 ]; then
             echo "::error::No release assets found under release-assets/" >&2
